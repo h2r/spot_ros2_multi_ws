@@ -1,0 +1,24 @@
+{
+  "mode": "router",
+  "connect": {
+    "endpoints": []
+  },
+  "listen": {
+    "endpoints": [
+      "tcp/0.0.0.0:21447",
+      "udp/0.0.0.0:21447"
+    ]
+  },
+  "scouting": {
+    "multicast": {
+      "enabled": true,
+      "address": "224.0.0.224:7446",
+      "interface": "auto"
+    }
+  },
+  "routing": {
+    "peer": {
+      "mode": "peer_to_peer"
+    }
+  }
+}

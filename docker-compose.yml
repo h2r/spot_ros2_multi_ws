@@ -17,3 +17,12 @@ services:
       - ./secrets:/ros2_ws/secrets
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
     command: /bin/bash
+  zenoh_router:
+    image: eclipse/zenoh:latest
+    container_name: zenoh_router
+    network_mode: host
+    volumes:
+      - ./zenoh-config.json5:/config.json5
+    command:
+      -c /config.json5
+    restart: unless-stopped
