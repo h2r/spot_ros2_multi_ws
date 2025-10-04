@@ -1,0 +1,19 @@
+
+services:
+  ros2_ws:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: ros2_ws:humble
+    container_name: ros2_ws
+    stdin_open: true
+    tty: true
+    network_mode: host
+    environment:
+      - DISPLAY=${DISPLAY}
+      - ROS_DOMAIN_ID=0
+    volumes:
+      - ./src:/ros2_ws/src
+      - ../secrets:/ros2_ws/secrets
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    command: /bin/bash
