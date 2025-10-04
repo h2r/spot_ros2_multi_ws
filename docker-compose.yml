@@ -14,6 +14,6 @@ services:
       - ROS_DOMAIN_ID=0
     volumes:
       - ./src:/ros2_ws/src
-      - ../secrets:/ros2_ws/secrets
+      - ./secrets:/ros2_ws/secrets
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
     command: /bin/bash
