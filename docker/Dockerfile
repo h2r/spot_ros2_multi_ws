@@ -30,19 +30,20 @@ RUN apt-get update -q && \
     qttools5-dev \
     ros-humble-ros-base \
     ros-dev-tools \
+    tmux \
     #check if Zenoh should be installed
     $(if [ "$EXPERIMENTAL_ZENOH_RMW" = "TRUE" ]; then echo "ros-humble-rmw-zenoh-cpp"; fi) \
     && rm -rf /var/lib/apt/lists/*
 
 # Create workspace
-WORKDIR /ros2_ws
-
-COPY ./src ./src
-RUN cd ./src/spot_ros2/ && ./install_spot_ros2.sh
-RUN rosdep update && rosdep install --from-paths src --ignore-src -r -y
-RUN bash -c "source /opt/ros/humble/setup.bash && colcon build --symlink-install"
+RUN mkdir -p /ros2_ws/src
+COPY ./src /ros2_ws/src
+WORKDIR /ros2_ws/
+RUN rosdep update && apt-get update && rosdep install --from-paths src --ignore-src -r -y
+RUN cd src/spot_ros2/ && ./install_spot_ros2.sh
 
 # Source workspace on container startup
 RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+COPY ./launch_multi_spot.sh /ros2_ws/
 
 CMD ["/bin/bash"]

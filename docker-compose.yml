@@ -14,7 +14,10 @@ services:
       - ROS_DOMAIN_ID=0
     volumes:
       - ./src:/ros2_ws/src
-      - ./secrets:/ros2_ws/secrets
+      - ./install:/ros2_ws/install
+      - ./build:/ros2_ws/build
+      - ./log:/ros2_ws/log
+      - ./secrets:/root/spot_configs:ro
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
     command: /bin/bash
   zenoh_router:
