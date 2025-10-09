@@ -6,7 +6,7 @@
 	url = https://github.com/koide3/small_gicp.git
 [submodule "src/spot_ros2"]
 	path = src/spot_ros2
-	url = https://github.com/bdaiinstitute/spot_ros2.git
+	url = git@github.com:h2r/spot_wrapper_ros2.git
 [submodule "src/spot_multi"]
 	path = src/spot_multi
 	url = git@github.com:h2r/spot_ros2_multi.git
