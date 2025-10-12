@@ -28,7 +28,7 @@ RUN apt-get update -q && \
     libpython3-dev \
     python3-tk \
     qttools5-dev \
-    ros-humble-ros-base \
+    ros-humble-desktop \
     ros-dev-tools \
     tmux \
     #check if Zenoh should be installed
@@ -44,6 +44,5 @@ RUN cd src/spot_ros2/ && ./install_spot_ros2.sh
 
 # Source workspace on container startup
 RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
-COPY ./launch_multi_spot.sh /ros2_ws/
 
 CMD ["/bin/bash"]

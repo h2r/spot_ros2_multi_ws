@@ -9,14 +9,12 @@ services:
     stdin_open: true
     tty: true
     network_mode: host
+    user: "${UID:-1000}:${GID:-1000}"
     environment:
       - DISPLAY=${DISPLAY}
       - ROS_DOMAIN_ID=0
     volumes:
-      - ./src:/ros2_ws/src
-      - ./install:/ros2_ws/install
-      - ./build:/ros2_ws/build
-      - ./log:/ros2_ws/log
+      - .:/ros2_ws
       - ./secrets:/root/spot_configs:ro
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
     command: /bin/bash
