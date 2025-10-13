@@ -30,12 +30,12 @@ tmux split-window -v -t $SESSION_NAME:0.2
 # Pane 0: First Spot Robot (gouger)
 tmux send-keys -t $SESSION_NAME:0.0 "cd /ros2_ws && source install/setup.bash" C-m
 tmux send-keys -t $SESSION_NAME:0.0 "echo 'Terminal 1: Starting Spot Gouger...'" C-m
-tmux send-keys -t $SESSION_NAME:0.0 "ros2 launch spot_driver spot_driver.launch.py config_file:=\$HOME/spot_configs/spot_gouger.yaml" C-m
+tmux send-keys -t $SESSION_NAME:0.0 "ros2 launch spot_driver spot_driver.launch.py config_file:=\$HOME/spot_configs/spot_tusker.yaml" C-m
 
 # Pane 1: Second Spot Robot (tusker)
 tmux send-keys -t $SESSION_NAME:0.1 "cd /ros2_ws && source install/setup.bash" C-m
 tmux send-keys -t $SESSION_NAME:0.1 "echo 'Terminal 2: Starting Spot Tusker...'" C-m
-tmux send-keys -t $SESSION_NAME:0.1 "ros2 launch spot_driver spot_driver.launch.py config_file:=\$HOME/spot_configs/spot_tusker.yaml" C-m
+tmux send-keys -t $SESSION_NAME:0.1 "ros2 launch spot_driver spot_driver.launch.py config_file:=\$HOME/spot_configs/spot_gouger.yaml" C-m
 
 # Pane 2: ROS# Communication Bridge
 tmux send-keys -t $SESSION_NAME:0.2 "cd /ros2_ws && source install/setup.bash" C-m
@@ -48,8 +48,8 @@ tmux send-keys -t $SESSION_NAME:0.3 "echo 'Terminal 4: Starting Multi-Robot Coor
 tmux send-keys -t $SESSION_NAME:0.3 "ros2 launch spot_multi spot_multi.launch.py" C-m
 
 # Set pane titles
-tmux select-pane -t $SESSION_NAME:0.0 -T "Spot Gouger"
-tmux select-pane -t $SESSION_NAME:0.1 -T "Spot Tusker"
+tmux select-pane -t $SESSION_NAME:0.0 -T "Spot Tusker"
+tmux select-pane -t $SESSION_NAME:0.1 -T "Spot Gouger"
 tmux select-pane -t $SESSION_NAME:0.2 -T "ROS# Bridge"
 tmux select-pane -t $SESSION_NAME:0.3 -T "Multi-Robot"
 
