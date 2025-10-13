@@ -72,6 +72,7 @@ rosdep install --from-paths src --ignore-src -r -y
 colcon build --symlink-install
 
 # launch these commands
+./launch_multi_spot.sh
 ```
 
 ## Manual Installation
@@ -113,8 +114,9 @@ colcon build --symlink-install
 
 ### 5. Launch
 ```bash
-
+./launch_multi_spot.sh
 ```
+will launch everything in a tmux workspace. To learn about each command, read below.
 
 ## Configuration
 
