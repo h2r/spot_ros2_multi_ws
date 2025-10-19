@@ -40,7 +40,7 @@ tmux send-keys -t $SESSION_NAME:0.1 "ros2 launch spot_driver spot_driver.launch.
 # Pane 2: ROS# Communication Bridge
 tmux send-keys -t $SESSION_NAME:0.2 "cd /ros2_ws && source install/setup.bash" C-m
 tmux send-keys -t $SESSION_NAME:0.2 "echo 'Terminal 3: Starting ROS# Communication Bridge...'" C-m
-tmux send-keys -t $SESSION_NAME:0.2 "ros2 launch file_server2 ros_sharp_communication.launch.py call_services_in_new_thread:=true send_action_goals_in_new_thread:=true" C-m
+tmux send-keys -t $SESSION_NAME:0.2 "ros2 launch file_server2 ros_sharp_communication.launch.py" C-m
 
 # Pane 3: Multi-Robot Coordination
 tmux send-keys -t $SESSION_NAME:0.3 "cd /ros2_ws && source install/setup.bash" C-m

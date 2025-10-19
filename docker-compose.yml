@@ -12,11 +12,20 @@ services:
     environment:
       - DISPLAY=${DISPLAY}
       - ROS_DOMAIN_ID=0
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
     volumes:
       - .:/ros2_ws
       - ./secrets:/root/spot_configs:ro
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
     command: /bin/bash
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
   zenoh_router:
     image: eclipse/zenoh:latest
     container_name: zenoh_router
