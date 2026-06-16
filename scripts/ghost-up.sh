@@ -29,13 +29,25 @@ if tmux has-session -t "$SESSION" 2>/dev/null; then
     exec tmux attach -t "$SESSION"
 fi
 
-# Geometry: left 2x2 (ROS), right column split in two (content).
-tmux new-session -d -s "$SESSION"
-tmux split-window -h -p 34 -t "$SESSION":0     # pane 1 = right column (34% wide)
-tmux split-window -v       -t "$SESSION":0.0   # pane 2 = left-bottom
-tmux split-window -h       -t "$SESSION":0.0   # pane 3 = left-top-right
-tmux split-window -h       -t "$SESSION":0.2   # pane 4 = left-bottom-right
-tmux split-window -v       -t "$SESSION":0.1   # pane 5 = right-bottom
+# Build the web console on first run (the Web pane serves web/dist).
+if [ ! -d "$ROOT/web/dist" ]; then
+    echo "Building web console (first run)..."
+    bash "$ROOT/scripts/build-web.sh" \
+        || echo "WARNING: web build failed — the Web pane won't serve until it succeeds."
+fi
+
+# Even 3x2 grid: make six panes, then let tmux tile them to equal sizes
+# (robust across tmux versions, unlike -p/-l percentages). Tiled places panes
+# row-major by index:
+#   0 1 2  ->  Drivers   Aggregator  Video
+#   3 4 5  ->  Bridge    Coord       Web
+tmux new-session -d -s "$SESSION" -x 220 -y 50
+tmux split-window -h -t "$SESSION":0.0
+tmux split-window -h -t "$SESSION":0.0
+tmux split-window -v -t "$SESSION":0.0
+tmux split-window -v -t "$SESSION":0.1
+tmux split-window -v -t "$SESSION":0.2
+tmux select-layout -t "$SESSION" tiled
 tmux set-option -t "$SESSION" pane-border-status top
 tmux set-option -t "$SESSION" mouse on
 
@@ -47,15 +59,15 @@ ros_pane() {  # $1 pane index   $2 title   $3 command
     tmux send-keys    -t "$SESSION:0.$1" "$SRC && $3" C-m
 }
 
-# Left 2x2 — ROS, inside the container.
+# ROS panes (left + middle columns), inside the container.
 ros_pane 0 "Drivers"    "ros2 launch spot_driver spot_driver.launch.py config_file:=\$HOME/spot_configs/spot_tusker.yaml & ros2 launch spot_driver spot_driver.launch.py config_file:=\$HOME/spot_configs/spot_gouger.yaml"
-ros_pane 3 "Aggregator" "ros2 run ghost_aggregator operator_aggregator.py"
-ros_pane 2 "Bridge"     "ros2 launch file_server2 ros_sharp_communication.launch.py"
+ros_pane 1 "Aggregator" "ros2 run ghost_aggregator operator_aggregator.py"
+ros_pane 3 "Bridge"     "ros2 launch file_server2 ros_sharp_communication.launch.py"
 ros_pane 4 "Coord"      "ros2 launch spot_multi spot_multi.launch.py"
 
 # Right column — content, on THIS host.
-tmux select-pane -t "$SESSION:0.1" -T "Video (MediaMTX)"
-tmux send-keys    -t "$SESSION:0.1" "cd '$ROOT/stream' && ./bin/mediamtx mediamtx.yml" C-m
+tmux select-pane -t "$SESSION:0.2" -T "Video (MediaMTX)"
+tmux send-keys    -t "$SESSION:0.2" "cd '$ROOT/stream' && ./bin/mediamtx mediamtx.yml" C-m
 
 tmux select-pane -t "$SESSION:0.5" -T "Web (console)"
 tmux send-keys    -t "$SESSION:0.5" "cd '$ROOT/web/dist' && python3 -m http.server 5173" C-m
