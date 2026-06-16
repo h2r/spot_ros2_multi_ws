@@ -51,14 +51,17 @@ docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
 ( cd "$ROOT" && docker compose up -d ros2_ws ) || { echo "ERROR: 'docker compose up' failed."; exit 1; }
 for _ in 1 2 3 4 5; do docker exec "$CONTAINER" true 2>/dev/null && break; sleep 1; done
 
-# 3. Build the workspace — full on first run, just our packages thereafter.
-if docker exec "$CONTAINER" test -f /ros2_ws/install/setup.bash 2>/dev/null; then
+# 3. Build the workspace. Sentinel is spot_driver (a core package), NOT
+#    install/setup.bash — the latter exists after a ghost-only build, which
+#    would wrongly skip building the drivers. Full build if spot_driver is
+#    missing; otherwise just refresh our packages.
+if docker exec "$CONTAINER" test -d /ros2_ws/install/spot_driver 2>/dev/null; then
     echo "Building ghost packages ..."
     docker exec "$CONTAINER" bash -lc \
         "cd /ros2_ws && source /opt/ros/humble/setup.bash && colcon build --packages-select ghost_msgs ghost_aggregator" \
         || echo "WARNING: ghost build failed."
 else
-    echo "First run — building the FULL workspace (drivers etc.); this takes a while..."
+    echo "spot_driver not built — building the FULL workspace; this takes a while..."
     docker exec "$CONTAINER" bash -lc \
         "cd /ros2_ws && source /opt/ros/humble/setup.bash && colcon build" \
         || echo "WARNING: full build failed — ROS panes may not start."
