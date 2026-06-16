@@ -9,10 +9,14 @@
 #   │ Bridge     │ Coord      │  Web         │   ROS panes run in the ros2_ws
 #   └────────────┴────────────┴──────────────┘   container via `docker exec`.
 #
-# Run this on the SERVER (where GHOST is cloned). One-time setup first — see
-# scripts/README.md: build the web console (scripts/build-web.sh), fetch the
-# Linux MediaMTX (cd stream && ./get_mediamtx.sh linux), build the ros
-# packages in the container, and have tmux installed on the host.
+# Run this on the SERVER. It self-heals to a known-good state every launch:
+# seeds robot configs, (re)starts the ros2_ws container mounting THIS repo,
+# builds the workspace (full on first run), builds the web console, fetches
+# MediaMTX, then opens the flat tmux. The only one-time prep is a dedicated
+# clone + submodules + tmux on the host:
+#   git clone <repo> ~/many-humans && cd ~/many-humans
+#   git checkout many-humans && git submodule update --init --recursive
+#   sudo apt-get install -y tmux        # if the host lacks it
 #
 # Usage: bash scripts/ghost-up.sh        (creates + attaches the 'ghost' session)
 
@@ -28,6 +32,38 @@ if tmux has-session -t "$SESSION" 2>/dev/null; then
     echo "Session '$SESSION' already running — attaching. (tmux kill-session -t $SESSION to reset.)"
     exec tmux attach -t "$SESSION"
 fi
+
+# ===================== clean bring-up (idempotent) =====================
+# Make every launch a known-good state: the container that mounts THIS repo,
+# robot configs in place, workspace built. Safe to re-run.
+SHARED_SECRETS="$HOME/spot_ros2_multi_ws/secrets"   # where the real configs live
+
+# 1. Robot configs (gitignored) — seed from the shared clone if ours is empty.
+if [ ! -e "$ROOT/secrets/spot_tusker.yaml" ] && [ -d "$SHARED_SECRETS" ]; then
+    echo "Seeding robot configs from $SHARED_SECRETS ..."
+    cp -rn "$SHARED_SECRETS/." "$ROOT/secrets/" 2>/dev/null || true
+fi
+
+# 2. Ensure the ros2_ws container is the one mounting THIS repo (drop any
+#    other so we never run against a stale/shared checkout).
+echo "Bringing up the ros2_ws container from $ROOT ..."
+docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+( cd "$ROOT" && docker compose up -d ros2_ws ) || { echo "ERROR: 'docker compose up' failed."; exit 1; }
+for _ in 1 2 3 4 5; do docker exec "$CONTAINER" true 2>/dev/null && break; sleep 1; done
+
+# 3. Build the workspace — full on first run, just our packages thereafter.
+if docker exec "$CONTAINER" test -f /ros2_ws/install/setup.bash 2>/dev/null; then
+    echo "Building ghost packages ..."
+    docker exec "$CONTAINER" bash -lc \
+        "cd /ros2_ws && source /opt/ros/humble/setup.bash && colcon build --packages-select ghost_msgs ghost_aggregator" \
+        || echo "WARNING: ghost build failed."
+else
+    echo "First run — building the FULL workspace (drivers etc.); this takes a while..."
+    docker exec "$CONTAINER" bash -lc \
+        "cd /ros2_ws && source /opt/ros/humble/setup.bash && colcon build" \
+        || echo "WARNING: full build failed — ROS panes may not start."
+fi
+# =================== end clean bring-up ===================
 
 # Build the web console on first run (the Web pane serves web/dist).
 if [ ! -d "$ROOT/web/dist" ]; then
