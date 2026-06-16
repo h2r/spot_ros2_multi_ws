@@ -23,7 +23,7 @@
 set -e
 
 SESSION="ghost"
-CONTAINER="ros2_ws"
+CONTAINER="ros2_ws_mh"   # our own container (docker-compose.override.yml) — never the lab's ros2_ws
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ENTER="docker exec -it $CONTAINER bash"
 SRC="source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash"
@@ -44,9 +44,10 @@ if [ ! -e "$ROOT/secrets/spot_tusker.yaml" ] && [ -d "$SHARED_SECRETS" ]; then
     cp -rn "$SHARED_SECRETS/." "$ROOT/secrets/" 2>/dev/null || true
 fi
 
-# 2. Ensure the ros2_ws container is the one mounting THIS repo (drop any
-#    other so we never run against a stale/shared checkout).
-echo "Bringing up the ros2_ws container from $ROOT ..."
+# 2. Bring up OUR container ($CONTAINER, named via docker-compose.override.yml)
+#    mounting THIS repo. We only ever drop/recreate ours — the lab's shared
+#    ros2_ws container is never touched.
+echo "Bringing up the $CONTAINER container from $ROOT ..."
 docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
 ( cd "$ROOT" && docker compose up -d ros2_ws ) || { echo "ERROR: 'docker compose up' failed."; exit 1; }
 for _ in 1 2 3 4 5; do docker exec "$CONTAINER" true 2>/dev/null && break; sleep 1; done

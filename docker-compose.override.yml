@@ -1,0 +1,8 @@
+# Branch-local override (many-humans): run our container under a distinct name
+# so it never collides with or disrupts the lab's shared `ros2_ws` container.
+# Both can exist at once; just don't run two ROS stacks simultaneously (they'd
+# clash on host ports, since network_mode is host). docker compose merges this
+# with docker-compose.yml automatically.
+services:
+  ros2_ws:
+    container_name: ros2_ws_mh
