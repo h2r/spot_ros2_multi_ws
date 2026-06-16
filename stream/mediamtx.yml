@@ -20,12 +20,14 @@ moq: no
 
 webrtc: yes
 webrtcAddress: :8889
-# Self-signed TLS for the LAN (generate with gen_certs.sh). Browsers must
-# trust the cert once: visit https://<server>:8889 and accept the warning.
-webrtcEncryption: yes
-webrtcServerKey: certs/server.key
-webrtcServerCert: certs/server.crt
+# Plain http on the LAN — the console page is served over http too, so there's
+# no mixed-content issue and operators skip the cert-trust step. For TLS,
+# generate certs (gen_certs.sh) and set webrtcEncryption: yes + the two paths.
+webrtcEncryption: no
 webrtcLocalUDPAddress: :8189
+# If cross-device video stays black, add this host's LAN IP so MediaMTX offers
+# a reachable ICE candidate (replace with the server's address):
+# webrtcAdditionalHosts: [128.148.138.132]
 
 paths:
   scene:

@@ -36,6 +36,13 @@ if [ ! -d "$ROOT/web/dist" ]; then
         || echo "WARNING: web build failed — the Web pane won't serve until it succeeds."
 fi
 
+# Fetch the Linux MediaMTX on first run (the Video pane runs it).
+if [ ! -x "$ROOT/stream/bin/mediamtx" ]; then
+    echo "Fetching MediaMTX (first run)..."
+    ( cd "$ROOT/stream" && bash get_mediamtx.sh linux ) \
+        || echo "WARNING: MediaMTX download failed — the Video pane won't serve."
+fi
+
 # Even 3x2 grid: make six panes, then let tmux tile them to equal sizes
 # (robust across tmux versions, unlike -p/-l percentages). Tiled places panes
 # row-major by index:
