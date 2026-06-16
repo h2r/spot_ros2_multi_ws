@@ -4,10 +4,10 @@
 # access. Windows runs ONLY Unity, pushing its video stream to this machine.
 #
 #   ┌────────────┬────────────┬──────────────┐
-#   │ Drivers    │ Aggregator │  Video       │   The right column (Video/Web)
-#   ├────────────┼────────────┤──────────────┤   runs on THIS host; the four
-#   │ Bridge     │ Coord      │  Web         │   ROS panes run in the ros2_ws
-#   └────────────┴────────────┴──────────────┘   container via `docker exec`.
+#   │ 0 Drivers  │ 1 Rosbridge│ 2 Localization│  Panes 0-3 are the ROS nodes
+#   ├────────────┼────────────┤──────────────┤   (in the container); 4-5 are
+#   │ 3 Aggregator│ 4 Video   │ 5 Web        │   Video/Web on THIS host.
+#   └────────────┴────────────┴──────────────┘
 #
 # Run this on the SERVER. It self-heals to a known-good state every launch:
 # seeds robot configs, (re)starts the ros2_ws container mounting THIS repo,
@@ -106,15 +106,15 @@ ros_pane() {  # $1 pane index   $2 title   $3 command
     tmux send-keys    -t "$SESSION:0.$1" "$SRC && $3" C-m
 }
 
-# ROS panes (left + middle columns), inside the container.
-ros_pane 0 "Drivers"    "ros2 launch spot_driver spot_driver.launch.py config_file:=\$HOME/spot_configs/spot_tusker.yaml & ros2 launch spot_driver spot_driver.launch.py config_file:=\$HOME/spot_configs/spot_gouger.yaml"
-ros_pane 1 "Aggregator" "ros2 run ghost_aggregator operator_aggregator.py"
-ros_pane 3 "Bridge"     "ros2 launch file_server2 ros_sharp_communication.launch.py"
-ros_pane 4 "Coord"      "ros2 launch spot_multi spot_multi.launch.py"
+# Panes 0-3: the four ROS nodes (in the container), named by function.
+ros_pane 0 "Drivers"      "ros2 launch spot_driver spot_driver.launch.py config_file:=\$HOME/spot_configs/spot_tusker.yaml & ros2 launch spot_driver spot_driver.launch.py config_file:=\$HOME/spot_configs/spot_gouger.yaml"
+ros_pane 1 "Rosbridge"    "ros2 launch file_server2 ros_sharp_communication.launch.py"
+ros_pane 2 "Localization" "ros2 launch spot_multi spot_multi.launch.py"
+ros_pane 3 "Aggregator"   "ros2 run ghost_aggregator operator_aggregator.py"
 
-# Right column — content, on THIS host.
-tmux select-pane -t "$SESSION:0.2" -T "Video (MediaMTX)"
-tmux send-keys    -t "$SESSION:0.2" "cd '$ROOT/stream' && ./bin/mediamtx mediamtx.yml" C-m
+# Panes 4-5: content, on THIS host.
+tmux select-pane -t "$SESSION:0.4" -T "Video (MediaMTX)"
+tmux send-keys    -t "$SESSION:0.4" "cd '$ROOT/stream' && ./bin/mediamtx mediamtx.yml" C-m
 
 tmux select-pane -t "$SESSION:0.5" -T "Web (console)"
 tmux send-keys    -t "$SESSION:0.5" "cd '$ROOT/web/dist' && python3 -m http.server 5173" C-m
