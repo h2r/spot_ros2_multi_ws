@@ -29,6 +29,15 @@ MAP_PATH="/root/spot_configs/map/demo"
 
 START_DRIVERS="${START_DRIVERS:-true}"
 
+# Rebuild the ghost packages so a freshly-pulled change is compiled before
+# launch (fast when nothing changed). Skip with SKIP_BUILD=true.
+if [ "${SKIP_BUILD:-false}" != "true" ]; then
+    echo "Building ghost packages (SKIP_BUILD=true to skip)..."
+    ( cd "$WS" && source /opt/ros/humble/setup.bash \
+        && colcon build --packages-select ghost_msgs ghost_aggregator ) \
+        || echo "WARNING: build failed — launching with the existing build."
+fi
+
 if tmux has-session -t "$SESSION" 2>/dev/null; then
     echo "Session '$SESSION' already running — attaching. (tmux kill-session -t $SESSION to reset.)"
     exec tmux attach -t "$SESSION"
