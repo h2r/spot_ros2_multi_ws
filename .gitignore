@@ -30,3 +30,5 @@ Thumbs.db
 # secrets
 secrets/*.yaml
 secrets/map
+
+src/spot_rtabmap
