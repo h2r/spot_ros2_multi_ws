@@ -1,3 +1,4 @@
+name: spot_sandbox_gui_record
 
 services:
   ros2_ws:
@@ -5,13 +6,13 @@ services:
       context: .
       dockerfile: docker/Dockerfile
     image: ros2_ws:humble
-    container_name: ros2_ws
+    container_name: ros2_ws_gui_record
     stdin_open: true
     tty: true
     network_mode: host
     environment:
       - DISPLAY=${DISPLAY}
-      - ROS_DOMAIN_ID=0
+      - ROS_DOMAIN_ID=5
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
     volumes:
@@ -26,12 +27,3 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-  zenoh_router:
-    image: eclipse/zenoh:latest
-    container_name: zenoh_router
-    network_mode: host
-    volumes:
-      - ./zenoh-config.json5:/config.json5
-    command:
-      -c /config.json5
-    restart: unless-stopped
