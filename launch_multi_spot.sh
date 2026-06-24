@@ -21,10 +21,11 @@ tmux set-option -t $SESSION_NAME mouse on
 # Source ROS2 setup in first window
 tmux send-keys -t $SESSION_NAME "cd /ros2_ws && source install/setup.bash" C-m
 
-# Split into 4 panes
-tmux split-window -h -t $SESSION_NAME
+# Split into 5 panes
+tmux split-window -h -t $SESSION_NAME:0.0
 tmux split-window -v -t $SESSION_NAME:0.0
-tmux split-window -v -t $SESSION_NAME:0.2
+tmux split-window -v -t $SESSION_NAME:0.1
+tmux split-window -v -t $SESSION_NAME:0.3
 
 # Setup each pane
 # Pane 0: First Spot Robot (gouger)
@@ -41,18 +42,23 @@ tmux send-keys -t $SESSION_NAME:0.1 "ros2 launch spot_driver spot_driver.launch.
 tmux send-keys -t $SESSION_NAME:0.2 "cd /ros2_ws && source install/setup.bash" C-m
 tmux send-keys -t $SESSION_NAME:0.2 "echo 'Terminal 3: Starting ROS# Communication Bridge...'" C-m
 tmux send-keys -t $SESSION_NAME:0.2 "ros2 launch file_server2 ros_sharp_communication.launch.py" C-m
-tmux send-keys -t $SESSION_NAME:0.2 "source /ros2_ws/install/setup.bash && ros2 run bag_trigger listener_node" C-m
 
 # Pane 3: Multi-Robot Coordination
 tmux send-keys -t $SESSION_NAME:0.3 "cd /ros2_ws && source install/setup.bash" C-m
 tmux send-keys -t $SESSION_NAME:0.3 "echo 'Terminal 4: Starting Multi-Robot Coordination...'" C-m
 tmux send-keys -t $SESSION_NAME:0.3 "ros2 launch spot_multi spot_multi.launch.py" C-m
 
+# Pane 4: ROS2 Bag Trigger Listener
+tmux send-keys -t $SESSION_NAME:0.4 "cd /ros2_ws && source install/setup.bash" C-m
+tmux send-keys -t $SESSION_NAME:0.4 "echo 'Terminal 5: Starting Bag Trigger Listener Node...'" C-m
+tmux send-keys -t $SESSION_NAME:0.4 "ros2 run bag_trigger listener_node" C-m
+
 # Set pane titles
 tmux select-pane -t $SESSION_NAME:0.0 -T "Spot Tusker"
 tmux select-pane -t $SESSION_NAME:0.1 -T "Spot Gouger"
 tmux select-pane -t $SESSION_NAME:0.2 -T "ROS# Bridge"
 tmux select-pane -t $SESSION_NAME:0.3 -T "Multi-Robot"
+tmux select-pane -t $SESSION_NAME:0.4 -T "Bag Trigger Listener"
 
 # Focus on first pane
 tmux select-pane -t $SESSION_NAME:0.0
