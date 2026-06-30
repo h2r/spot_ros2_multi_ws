@@ -28,14 +28,14 @@ tmux split-window -v -t $SESSION_NAME:0.1
 tmux split-window -v -t $SESSION_NAME:0.3
 
 # Setup each pane
-# Pane 0: First Spot Robot (gouger)
+# Pane 0: First Spot Robot (tusker)
 tmux send-keys -t $SESSION_NAME:0.0 "cd /ros2_ws && source install/setup.bash" C-m
-tmux send-keys -t $SESSION_NAME:0.0 "echo 'Terminal 1: Starting Spot Gouger...'" C-m
+tmux send-keys -t $SESSION_NAME:0.0 "echo 'Terminal 1: Starting Spot Tusker...'" C-m
 tmux send-keys -t $SESSION_NAME:0.0 "ros2 launch spot_driver spot_driver.launch.py config_file:=\$HOME/spot_configs/spot_tusker.yaml" C-m
 
-# Pane 1: Second Spot Robot (tusker)
+# Pane 1: Second Spot Robot (gouger)
 tmux send-keys -t $SESSION_NAME:0.1 "cd /ros2_ws && source install/setup.bash" C-m
-tmux send-keys -t $SESSION_NAME:0.1 "echo 'Terminal 2: Starting Spot Tusker...'" C-m
+tmux send-keys -t $SESSION_NAME:0.1 "echo 'Terminal 2: Starting Spot Gouger...'" C-m
 tmux send-keys -t $SESSION_NAME:0.1 "ros2 launch spot_driver spot_driver.launch.py config_file:=\$HOME/spot_configs/spot_gouger.yaml" C-m
 
 # Pane 2: ROS# Communication Bridge

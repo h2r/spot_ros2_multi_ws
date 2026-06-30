@@ -45,4 +45,12 @@ RUN cd src/spot_ros2/ && ./install_spot_ros2.sh
 # Source workspace on container startup
 RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
 
+# Boston dynamics dependencies
+RUN pip3 install --no-cache-dir \
+    bosdyn-client \
+    bosdyn-mission \
+    bosdyn-api \
+    bosdyn-core \
+    bosdyn-choreography-client
+
 CMD ["/bin/bash"]
