@@ -3,38 +3,51 @@ from rclpy.node import Node
 from std_srvs.srv import SetBool
 import subprocess
 import os
+import signal
 from datetime import datetime
 
 class BagTriggerNode(Node):
     def __init__(self):
         super().__init__('bag_trigger_node')
-        # Create the service that Unity will call
-        self.srv = self.create_service(SetBool, 'bag_trigger', self.trigger_callback)
+        # Force an absolute global path with a leading slash so Rosbridge maps it cleanly
+        self.srv = self.create_service(SetBool, '/bag_trigger', self.trigger_callback)
         self.bag_process = None
         self.get_logger().info('Bag Trigger Node has been initialized and is listening on /bag_trigger')
 
     def trigger_callback(self, request, response):
-        # IF REQUEST IS TRUE: START RECORDING
         if request.data:
             if self.bag_process is not None:
                 response.success = False
                 response.message = "Bag recording is already running!"
                 return response
             
-            # Generate a clean timestamp for the directory name
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_dir = f"/ros2_ws/src/recordings/bag_{timestamp}"
             
             self.get_logger().info(f"Starting ROS2 bag recording to: {output_dir}")
             
-            # Fire off 'ros2 bag record -a' as an independent background process
-            cmd = ["ros2", "bag", "record", "-a", "-o", output_dir]
-            self.bag_process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            # REMOVED '& disown' so Python tracks the process group correctly
+            cmd_str = (
+                "export FASTRTPS_DEFAULT_PROFILES_FILE=/ros2_ws/fastdds_config.xml && "
+                "source /opt/ros/humble/setup.bash && "
+                "source /ros2_ws/install/setup.bash && "
+                f"ros2 bag record -a -o {output_dir}"
+            )
             
+            # This spawns the process asynchronously in the background instantly
+            self.bag_process = subprocess.Popen(
+                cmd_str, 
+                shell=True, 
+                executable="/bin/bash",
+                stdout=subprocess.DEVNULL, 
+                stderr=subprocess.DEVNULL,
+                start_new_session=True  
+            )
+            
+            # Return immediately without waiting for discovery traffic to finish!
             response.success = True
             response.message = f"Recording started successfully at {output_dir}"
-            
-        # IF REQUEST IS FALSE: STOP RECORDING
+
         else:
             if self.bag_process is None:
                 response.success = False
@@ -42,10 +55,23 @@ class BagTriggerNode(Node):
                 return response
                 
             self.get_logger().info("Stopping ROS2 bag recording...")
-            # Cleanly terminate the recording process
-            self.bag_process.terminate()
-            self.bag_process.wait()
-            self.bag_process = None
+            
+            try:
+                pgid = os.getpgid(self.bag_process.pid)
+                os.killpg(pgid, signal.SIGINT)
+                
+                try:
+                    self.bag_process.wait(timeout=5.0)
+                except subprocess.TimeoutExpired:
+                    self.get_logger().warn("Bag process did not stop in time. Force killing...")
+                    os.killpg(pgid, signal.SIGKILL)
+                    self.bag_process.wait()
+            except ProcessLookupError:
+                # If everything else fails, look up the system process tree to clean up manually
+                self.get_logger().warn("Process group missing. Forcing terminal cleanup...")
+                os.system('pkill -f "ros2 bag record"')
+            finally:
+                self.bag_process = None
             
             response.success = True
             response.message = "Recording stopped and saved cleanly."
@@ -60,13 +86,13 @@ def main(args=None):
     except KeyboardInterrupt:
         pass
     finally:
-        # Emergency cleanup if the node is killed while recording
         if node.bag_process is not None:
-            node.bag_process.terminate()
+            try:
+                os.killpg(os.getpgid(node.bag_process.pid), signal.SIGKILL)
+            except ProcessLookupError:
+                pass
         node.destroy_node()
         rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
-
-
