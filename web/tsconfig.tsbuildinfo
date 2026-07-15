@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/config.ts","./src/main.tsx","./src/vite-env.d.ts","./src/components/KeyCluster.tsx","./src/components/StopKey.tsx","./src/components/VideoPanel.tsx","./src/control/keyboard.ts","./src/ros/connection.ts","./src/ros/messages.ts","./src/video/whep.ts"],"version":"5.9.3"}

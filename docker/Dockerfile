@@ -30,6 +30,7 @@ RUN apt-get update -q && \
     qttools5-dev \
     ros-humble-desktop \
     ros-dev-tools \
+    ros-humble-tf2-tools \
     tmux \
     #check if Zenoh should be installed
     $(if [ "$EXPERIMENTAL_ZENOH_RMW" = "TRUE" ]; then echo "ros-humble-rmw-zenoh-cpp"; fi) \

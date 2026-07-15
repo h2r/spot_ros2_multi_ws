@@ -33,3 +33,4 @@ secrets/map
 
 # recordings
 src/recordings
+src/spot_rtabmap
