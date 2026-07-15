@@ -1,4 +1,4 @@
-name: spot_sandbox_gui_record
+name: spot_gui_record
 
 services:
   ros2_ws:
