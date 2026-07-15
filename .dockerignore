@@ -1,0 +1,40 @@
+# Ignore local ROS 2 build artifacts
+build/
+install/
+log/
+
+# Ignore web development dependencies (Crucial!)
+**/node_modules/
+**/dist/
+.svelte-kit/
+.next/
+web/.tscbuildinfo
+web/tsconfig.tsbuildinfo
+
+# Ignore local Python caches and virtual environments
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.venv/
+venv/
+.pytest_cache/
+
+# Ignore version control and IDE configuration folders
+.git/
+.github/
+.vscode/
+.idea/
+
+# Ignore massive data, media, and rosbag files
+**/*.db3
+**/*.mcap
+**/*.bag
+**/*.mp4
+**/*.avi
+**/*.bin
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.pdf
+**/*.gv
