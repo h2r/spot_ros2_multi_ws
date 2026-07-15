@@ -19,7 +19,7 @@ tmux new-session -d -s $SESSION_NAME
 tmux set-option -t $SESSION_NAME mouse on
 
 # Source ROS2 setup in first window
-tmux send-keys -t $SESSION_NAME "cd /ros2_ws && source install/setup.bash" C-m
+tmux send-keys -t $SESSION_NAME:0.2 "ros2 launch file_server2 ros_sharp_communication.launch.py address:=0.0.0.0" C-m
 
 # Split into 5 panes
 tmux split-window -h -t $SESSION_NAME:0.0
@@ -30,31 +30,26 @@ tmux split-window -v -t $SESSION_NAME:0.3
 # Setup each pane
 # Pane 0: First Spot Robot (tusker)
 tmux send-keys -t $SESSION_NAME:0.0 "cd /ros2_ws && source install/setup.bash" C-m
-tmux send-keys -t $SESSION_NAME:0.0 "export FASTRTPS_DEFAULT_PROFILES_FILE=/ros2_ws/fastdds_config.xml" C-m
 tmux send-keys -t $SESSION_NAME:0.0 "echo 'Terminal 1: Starting Spot Gouger...'" C-m
 tmux send-keys -t $SESSION_NAME:0.0 "ros2 launch spot_driver spot_driver.launch.py config_file:=\$HOME/spot_configs/spot_tusker.yaml" C-m
 
 # Pane 1: Second Spot Robot (gouger)
 tmux send-keys -t $SESSION_NAME:0.1 "cd /ros2_ws && source install/setup.bash" C-m
-tmux send-keys -t $SESSION_NAME:0.1 "export FASTRTPS_DEFAULT_PROFILES_FILE=/ros2_ws/fastdds_config.xml" C-m
 tmux send-keys -t $SESSION_NAME:0.1 "echo 'Terminal 2: Starting Spot Tusker...'" C-m
 tmux send-keys -t $SESSION_NAME:0.1 "ros2 launch spot_driver spot_driver.launch.py config_file:=\$HOME/spot_configs/spot_gouger.yaml" C-m
 
 # Pane 2: ROS# Communication Bridge
 tmux send-keys -t $SESSION_NAME:0.2 "cd /ros2_ws && source install/setup.bash" C-m
-tmux send-keys -t $SESSION_NAME:0.2 "export FASTRTPS_DEFAULT_PROFILES_FILE=/ros2_ws/fastdds_config.xml" C-m
 tmux send-keys -t $SESSION_NAME:0.2 "echo 'Terminal 3: Starting ROS# Communication Bridge...'" C-m
 tmux send-keys -t $SESSION_NAME:0.2 "ros2 launch file_server2 ros_sharp_communication.launch.py" C-m
 
 # Pane 3: Multi-Robot Coordination
 tmux send-keys -t $SESSION_NAME:0.3 "cd /ros2_ws && source install/setup.bash" C-m
-tmux send-keys -t $SESSION_NAME:0.3 "export FASTRTPS_DEFAULT_PROFILES_FILE=/ros2_ws/fastdds_config.xml" C-m
 tmux send-keys -t $SESSION_NAME:0.3 "echo 'Terminal 4: Starting Multi-Robot Coordination...'" C-m
 tmux send-keys -t $SESSION_NAME:0.3 "ros2 launch spot_multi spot_multi.launch.py" C-m
 
 # Pane 4: ROS2 Bag Trigger Listener
 tmux send-keys -t $SESSION_NAME:0.4 "cd /ros2_ws && source install/setup.bash" C-m
-tmux send-keys -t $SESSION_NAME:0.4 "export FASTRTPS_DEFAULT_PROFILES_FILE=/ros2_ws/fastdds_config.xml" C-m
 tmux send-keys -t $SESSION_NAME:0.4 "echo 'Terminal 5: Starting Bag Trigger Listener Node...'" C-m
 tmux send-keys -t $SESSION_NAME:0.4 "ros2 run bag_trigger listener_node" C-m
 

@@ -30,3 +30,6 @@ Thumbs.db
 # secrets
 secrets/*.yaml
 secrets/map
+
+# recordings
+src/recordings

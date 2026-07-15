@@ -9,7 +9,9 @@ services:
     container_name: ros2_ws_gui_record
     stdin_open: true
     tty: true
-    network_mode: host
+    #network_mode: host
+    ports:
+      - "9090:9090"
     environment:
       - DISPLAY=${DISPLAY}
       - ROS_DOMAIN_ID=5
