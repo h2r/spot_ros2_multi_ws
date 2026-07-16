@@ -1,6 +1,6 @@
 FROM ros:humble
 
-#RMW ZENOH experimental flag
+# RMW ZENOH experimental flag
 ARG EXPERIMENTAL_ZENOH_RMW=TRUE
 
 # Set noninteractive mode for APT
@@ -32,14 +32,25 @@ RUN apt-get update -q && \
     ros-dev-tools \
     ros-humble-tf2-tools \
     tmux \
-    #check if Zenoh should be installed
+    # check if Zenoh should be installed
     $(if [ "$EXPERIMENTAL_ZENOH_RMW" = "TRUE" ]; then echo "ros-humble-rmw-zenoh-cpp"; fi) \
     && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --upgrade pip
+
+RUN pip3 install --no-cache-dir \
+    "numpy<2.0" \
+    "setuptools>=71.0.0,<80.0.0" \
+    "opencv-python-headless<4.12"
+
+
+RUN pip3 install --no-cache-dir "lerobot==0.4.4" --ignore-installed sympy
 
 # Create workspace
 RUN mkdir -p /ros2_ws/src
 COPY ./src /ros2_ws/src
 WORKDIR /ros2_ws/
+
 RUN rosdep update && apt-get update && rosdep install --from-paths src --ignore-src -r -y
 RUN cd src/spot_ros2/ && ./install_spot_ros2.sh
 
@@ -53,5 +64,9 @@ RUN pip3 install --no-cache-dir \
     bosdyn-api \
     bosdyn-choreography-client \
     aiortc
+
+RUN pip3 install --no-cache-dir --force-reinstall \
+    "numpy<2.0" \
+    "setuptools>=71.0.0,<80.0.0"
 
 CMD ["/bin/bash"]
