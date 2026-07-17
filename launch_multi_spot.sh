@@ -46,7 +46,7 @@ tmux send-keys -t $SESSION_NAME:0.2 "ros2 launch file_server2 ros_sharp_communic
 # Pane 3: Multi-Robot Coordination
 tmux send-keys -t $SESSION_NAME:0.3 "cd /ros2_ws && source install/setup.bash" C-m
 tmux send-keys -t $SESSION_NAME:0.3 "echo 'Terminal 4: Starting Multi-Robot Coordination...'" C-m
-tmux send-keys -t $SESSION_NAME:0.3 "ros2 launch spot_multi spot_multi.launch.py" C-m
+tmux send-keys -t $SESSION_NAME:0.3 "ros2 launch spot_multi spot_multi.launch.py spot_names:='[\"tusker\", \"gouger\"]' pivot_spot:=tusker" C-m
 
 # Pane 4: ROS2 Bag Trigger Listener
 tmux send-keys -t $SESSION_NAME:0.4 "cd /ros2_ws && source install/setup.bash" C-m
