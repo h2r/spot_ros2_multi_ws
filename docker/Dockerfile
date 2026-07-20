@@ -59,12 +59,18 @@ RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
 
 # Boston dynamics packages
 RUN pip3 install --no-cache-dir \
-    bosdyn-client \
-    bosdyn-mission \
-    bosdyn-api \
-    bosdyn-choreography-client \
+    bosdyn-client==5.0.1 \
+    bosdyn-mission==5.0.1 \
+    bosdyn-api==5.0.1 \
+    bosdyn-core==5.0.1 \
+    bosdyn-choreography-client==5.0.1 \
     aiortc
 
+
+RUN pip3 install --no-cache-dir --ignore-installed transforms3d
+
+# Must run last: lerobot/bosdyn/transforms3d all pull in numpy>=2, which breaks the
+# numpy 1.x ABI that ros-humble-cv-bridge's compiled boost extension was built against.
 RUN pip3 install --no-cache-dir --force-reinstall \
     "numpy<2.0" \
     "setuptools>=71.0.0,<80.0.0"
