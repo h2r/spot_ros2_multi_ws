@@ -108,7 +108,8 @@ class BagTriggerNode(Node):
         self.dataset.add_frame({
             "observation.images.front": self.latest_image,
             "observation.state": self.latest_joints,
-            "action": self.latest_joints,  
+            "action": self.latest_joints,
+            "task": f"{self.spot_name} teleop",
         })
         self.frames_in_current_episode += 1
 
@@ -122,14 +123,16 @@ class BagTriggerNode(Node):
             
             # 1. Generate unique timestamped dataset directory
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_dir = f"/ros2_ws/src/recordings/bag_{timestamp}"
+            output_dir = f"/ros2_ws/recordings/bag_{timestamp}"
             unique_repo_id = f"jtoribio/spot_unity_dataset_{timestamp}"
-            
+            lerobot_root = f"/ros2_ws/recordings/bag_{timestamp}_lerobot"
+
             # 2. Always create a brand-new dataset with this unique name
             self.get_logger().info(f"Initializing a brand new LeRobot Dataset: {unique_repo_id}")
             self.dataset = LeRobotDataset.create(
                 repo_id=unique_repo_id,
                 fps=self.lerobot_fps,
+                root=lerobot_root,
                 features=self.lerobot_features,
                 robot_type="spot"
             )
