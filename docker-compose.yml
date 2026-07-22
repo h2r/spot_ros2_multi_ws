@@ -9,6 +9,7 @@ services:
     container_name: ros2_ws_gui_record
     stdin_open: true
     tty: true
+    shm_size: '2gb'
     #network_mode: host
     ports:
       - "9090:9090"

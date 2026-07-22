@@ -8,6 +8,7 @@ from std_srvs.srv import SetBool
 import subprocess
 import os
 import signal
+import time
 from datetime import datetime
 import cv2
 
@@ -21,7 +22,10 @@ from lerobot.datasets.lerobot_dataset import LeRobotDataset
 class BagTriggerNode(Node):
     def __init__(self):
         super().__init__('bag_trigger_node')
-        
+
+        self.declare_parameter('spot_name', 'spot')
+        self.spot_name = self.get_parameter('spot_name').get_parameter_value().string_value
+
         self.srv = self.create_service(SetBool, '/bag_trigger', self.trigger_callback)
         self.bag_process = None
         
@@ -55,21 +59,24 @@ class BagTriggerNode(Node):
         }
         
         # ROS 2 Subscriptions
+        self.image_topic = f'/{self.spot_name}/camera/frontmiddle_virtual/image'
+        self.joint_topic = f'/{self.spot_name}/joint_states'
+
         self.image_sub = self.create_subscription(
-            Image, 
-            '/spot/camera/front/image',  
-            self.image_callback, 
+            Image,
+            self.image_topic,
+            self.image_callback,
             10
         )
         self.joint_sub = self.create_subscription(
-            JointState, 
-            '/spot/joint_states',        
-            self.joint_callback, 
+            JointState,
+            self.joint_topic,
+            self.joint_callback,
             10
         )
-        
+
         self.record_timer = self.create_timer(1.0 / self.lerobot_fps, self.record_lerobot_frame)
-        self.get_logger().info('Bag Trigger Node (with LeRobot) has been initialized and is listening on /bag_trigger')
+        self.get_logger().info(f'Bag Trigger Node (with LeRobot) has been initialized for "{self.spot_name}" and is listening on /bag_trigger')
 
     def image_callback(self, msg: Image):
         try:
@@ -89,8 +96,8 @@ class BagTriggerNode(Node):
         # If we are missing data streams, print a throttled warning so you know what's wrong
         if self.latest_image is None or self.latest_joints is None:
             missing = []
-            if self.latest_image is None: missing.append("Images (/spot/camera/front/image)")
-            if self.latest_joints is None: missing.append("Joint States (/spot/joint_states)")
+            if self.latest_image is None: missing.append(f"Images ({self.image_topic})")
+            if self.latest_joints is None: missing.append(f"Joint States ({self.joint_topic})")
             self.get_logger().warn(
                 f"LeRobot recording active but waiting for data streams. Missing: {', '.join(missing)}",
                 throttle_duration_sec=3.0
@@ -182,14 +189,18 @@ class BagTriggerNode(Node):
             
             try:
                 pgid = os.getpgid(self.bag_process.pid)
+                sigint_time = time.monotonic()
+                self.get_logger().info(f"Sent SIGINT to bag process group (pgid={pgid}) at {sigint_time:.2f}")
                 os.killpg(pgid, signal.SIGINT)
-                
+
                 try:
-                    self.bag_process.wait(timeout=5.0)
+                    self.bag_process.wait(timeout=20.0)
+                    self.get_logger().info(f"Bag process exited gracefully after {time.monotonic() - sigint_time:.2f}s")
                 except subprocess.TimeoutExpired:
-                    self.get_logger().warn("Bag process did not stop in time. Force killing...")
+                    self.get_logger().warn(f"Bag process did not stop after {time.monotonic() - sigint_time:.2f}s. Force killing...")
                     os.killpg(pgid, signal.SIGKILL)
                     self.bag_process.wait()
+                    self.get_logger().warn(f"Bag process force-killed at {time.monotonic() - sigint_time:.2f}s total")
             except ProcessLookupError:
                 self.get_logger().warn("Process group missing. Forcing terminal cleanup...")
                 os.system('pkill -f "ros2 bag record"')
