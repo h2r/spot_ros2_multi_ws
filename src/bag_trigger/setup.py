@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'listener_node = bag_trigger.listener_node:main',
+            'lerobot_action_player = bag_trigger.lerobot_action_player:main',
         ],
     },
 )
