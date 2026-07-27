@@ -47,6 +47,11 @@ class BagTriggerNode(Node):
         # No cmd_vel/arm_pose/gripper message is published while the operator holds
         # things still, so default these to zero instead of blocking recording on them.
         self.latest_cmd_vel = np.zeros(6, dtype=np.float32)
+        # /cmd_vel is only published on stick movement, not continuously, so a stray
+        # message (e.g. controller drift) would otherwise latch forever. Treat it as
+        # stale and fall back to zero once this long has passed since the last message.
+        self.latest_cmd_vel_time = None
+        self.cmd_vel_timeout_sec = 0.3
         self.latest_arm_pose = np.zeros(7, dtype=np.float32)
         self.latest_arm_pose[6] = 1.0  # quaternion w=1 (identity rotation) as the zero default
         self.latest_gripper_angle = np.zeros(1, dtype=np.float32)
@@ -157,6 +162,7 @@ class BagTriggerNode(Node):
             msg.linear.x, msg.linear.y, msg.linear.z,
             msg.angular.x, msg.angular.y, msg.angular.z,
         ], dtype=np.float32)
+        self.latest_cmd_vel_time = self.get_clock().now()
 
     def arm_pose_callback(self, msg: PoseStamped):
         p, q = msg.pose.position, msg.pose.orientation
@@ -183,9 +189,19 @@ class BagTriggerNode(Node):
             )
             return
 
+        # Treat cmd_vel as zero once it's gone stale, rather than replaying whatever
+        # value happened to arrive last (see latest_cmd_vel_time comment in __init__).
+        cmd_vel = self.latest_cmd_vel
+        if self.latest_cmd_vel_time is None:
+            cmd_vel = np.zeros(6, dtype=np.float32)
+        else:
+            age_sec = (self.get_clock().now() - self.latest_cmd_vel_time).nanoseconds / 1e9
+            if age_sec > self.cmd_vel_timeout_sec:
+                cmd_vel = np.zeros(6, dtype=np.float32)
+
         # Append frame data
         action = np.concatenate([
-            self.latest_cmd_vel,
+            cmd_vel,
             self.latest_arm_pose,
             self.latest_gripper_angle,
         ])

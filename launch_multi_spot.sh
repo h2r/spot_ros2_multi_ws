@@ -53,6 +53,10 @@ tmux new-session -d -s $SESSION_NAME
 # Enable mouse mode
 tmux set-option -t $SESSION_NAME mouse on
 
+# Show pane titles in a status line above each pane
+tmux set-option -t $SESSION_NAME pane-border-status top
+tmux set-option -t $SESSION_NAME pane-border-format "#{pane_title}"
+
 # Source ROS2 setup in first window
 tmux send-keys -t $SESSION_NAME:0.2 "ros2 launch file_server2 ros_sharp_communication.launch.py address:=0.0.0.0" C-m
 
@@ -97,11 +101,11 @@ tmux send-keys -t $SESSION_NAME:0.4 "echo 'Terminal 5: Starting Bag Trigger List
 tmux send-keys -t $SESSION_NAME:0.4 "ros2 run bag_trigger listener_node --ros-args -p spot_name:=$BAG_TRIGGER_SPOT" C-m
 
 # Set pane titles
-tmux select-pane -t $SESSION_NAME:0.0 -T "Spot"
-tmux select-pane -t $SESSION_NAME:0.1 -T "Spot2"
-tmux select-pane -t $SESSION_NAME:0.2 -T "ROS# Bridge"
-tmux select-pane -t $SESSION_NAME:0.3 -T "Multi-Robot"
-tmux select-pane -t $SESSION_NAME:0.4 -T "Bag Trigger Listener"
+tmux select-pane -t $SESSION_NAME:0.0 -T " Tusker "
+tmux select-pane -t $SESSION_NAME:0.1 -T " Gouger "
+tmux select-pane -t $SESSION_NAME:0.2 -T " ROS# Bridge "
+tmux select-pane -t $SESSION_NAME:0.3 -T " Multi-Robot "
+tmux select-pane -t $SESSION_NAME:0.4 -T " Recording "
 
 # Focus on first pane
 tmux select-pane -t $SESSION_NAME:0.0
