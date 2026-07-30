@@ -13,6 +13,8 @@ and in the same starting arm configuration the recording began from (e.g. via
 the /<spot_name>/arm_stow service) before running this.
 """
 import argparse
+import glob
+import os
 import time
 
 import numpy as np
@@ -27,20 +29,60 @@ from std_msgs.msg import Float32
 # cmd_vel (6) + arm_pose position+quaternion (7) + gripper_angle (1) = 14
 ARM_POSE_FRAME_ID = "body"
 
+# Where listener_node.py writes new recordings (see its trigger_callback).
+DEFAULT_RECORDINGS_ROOT = "/ros2_ws/recordings"
+
+
+def resolve_parquet_paths(bag: str, recordings_root: str) -> list:
+    """Turn a bag name, dataset dir, or parquet path into concrete parquet file(s).
+
+    Accepts, in order of how directly they resolve:
+      - a path straight to a .parquet file
+      - a path to a lerobot dataset root (dir containing data/chunk-*/file-*.parquet)
+      - a bag name to look up under recordings_root, in any of the forms
+        listener_node.py's timestamped output uses: "20260727_175555",
+        "bag_20260727_175555", or "bag_20260727_175555_lerobot"
+    """
+    if os.path.isfile(bag) and bag.endswith(".parquet"):
+        return [bag]
+
+    dataset_dir = bag if os.path.isdir(bag) else None
+    if dataset_dir is None:
+        # Check "_lerobot"-suffixed variants first: a raw (non-lerobot) bag dir of
+        # the same name also exists alongside every recording (see listener_node.py's
+        # trigger_callback) but has no parquet data, so it must not shadow the real one.
+        for candidate in (f"bag_{bag}_lerobot", f"{bag}_lerobot", bag, f"bag_{bag}"):
+            candidate_path = os.path.join(recordings_root, candidate)
+            if os.path.isdir(candidate_path):
+                dataset_dir = candidate_path
+                break
+
+    if dataset_dir is None:
+        raise FileNotFoundError(
+            f"Could not find a recording matching '{bag}' under {recordings_root} "
+            "(and it isn't a .parquet file or dataset directory itself)."
+        )
+
+    chunks = sorted(glob.glob(os.path.join(dataset_dir, "data", "chunk-*", "file-*.parquet")))
+    if not chunks:
+        raise FileNotFoundError(f"No data/chunk-*/file-*.parquet found under {dataset_dir}")
+    return chunks
+
 
 class LerobotActionPlayer(Node):
-    def __init__(self, parquet_path: str, spot_name: str, fps: float):
+    def __init__(self, bag: str, spot_name: str, fps: float, recordings_root: str = DEFAULT_RECORDINGS_ROOT):
         super().__init__('lerobot_action_player')
 
         self.cmd_vel_pub = self.create_publisher(Twist, f'/{spot_name}/cmd_vel', 10)
         self.arm_pose_pub = self.create_publisher(PoseStamped, f'/{spot_name}/arm_pose_commands', 10)
         self.gripper_pub = self.create_publisher(Float32, f'/{spot_name}/gripper_angle_command', 10)
 
-        df = pd.read_parquet(parquet_path)
+        parquet_paths = resolve_parquet_paths(bag, recordings_root)
+        df = pd.concat([pd.read_parquet(p) for p in parquet_paths], ignore_index=True)
         self.actions = np.stack(df['action'].values)
         self.period = 1.0 / fps
         self.get_logger().info(
-            f"Loaded {len(self.actions)} actions from {parquet_path} "
+            f"Loaded {len(self.actions)} actions from {', '.join(parquet_paths)} "
             f"({len(self.actions) / fps:.1f}s at {fps} fps)"
         )
 
@@ -82,17 +124,24 @@ class LerobotActionPlayer(Node):
 def main(args=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        'parquet_path',
-        help="Path to the dataset's parquet file, e.g. "
-             ".../bag_20260724_210047_lerobot/data/chunk-000/file-000.parquet",
+        'bag',
+        help="Which recording to replay. Any of: a bag timestamp/name "
+             "('20260727_175555', 'bag_20260727_175555'), a full path to a "
+             "lerobot dataset directory, or a full path straight to a .parquet file.",
     )
     parser.add_argument('--spot_name', default='spot')
     parser.add_argument('--fps', type=float, default=15.0, help="Must match the dataset's recorded fps")
     parser.add_argument('--rate', type=float, default=1.0, help="Playback speed multiplier (0.5 = half speed)")
+    parser.add_argument(
+        '--recordings_root', default=DEFAULT_RECORDINGS_ROOT,
+        help="Directory to look up a bare bag name/timestamp under",
+    )
     parsed = parser.parse_args(args)
 
     rclpy.init()
-    node = LerobotActionPlayer(parsed.parquet_path, parsed.spot_name, parsed.fps * parsed.rate)
+    node = LerobotActionPlayer(
+        parsed.bag, parsed.spot_name, parsed.fps * parsed.rate, parsed.recordings_root
+    )
     try:
         node.play()
     except KeyboardInterrupt:
