@@ -12,9 +12,13 @@
 #   ./replay_bag.sh 20260727_175555 --spot-name spot
 #   ./replay_bag.sh bag_20260727_175555 --spot-name spot2 --rate 0.5
 #   ./replay_bag.sh /ros2_ws/recordings/bag_20260727_175555_lerobot --spot-name spot
+#   ./replay_bag.sh 20260727_175555 --spot-name spot --yes   # skip the confirmation prompt
 #
 # BAG is looked up under /ros2_ws/recordings/ if it's not itself a path to a
 # dataset directory or .parquet file (see lerobot_action_player.py).
+#
+# Prompts for a "yes" confirmation before playback starts (pass --yes/-y to skip,
+# e.g. when calling this from another script).
 
 CONTAINER_NAME="ros2_ws_gui_record"
 
@@ -26,12 +30,14 @@ BAG=""
 SPOT_NAME="spot"
 FPS="15.0"
 RATE="1.0"
+SKIP_CONFIRM=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --spot-name) SPOT_NAME="$2"; shift 2 ;;
         --fps) FPS="$2"; shift 2 ;;
         --rate) RATE="$2"; shift 2 ;;
+        --yes|-y) SKIP_CONFIRM=true; shift ;;
         -*)
             echo "Unknown argument: $1"
             echo "Usage: $0 <bag> [--spot-name spot|spot2] [--fps 15.0] [--rate 1.0]"
@@ -52,6 +58,16 @@ if [[ -z "$BAG" ]]; then
     echo "Error: bag is required (e.g. a timestamp like 20260727_175555, or a full dataset/parquet path)"
     echo "Usage: $0 <bag> [--spot-name spot|spot2] [--fps 15.0] [--rate 1.0]"
     exit 1
+fi
+
+if [[ "$SKIP_CONFIRM" == false ]]; then
+    echo "!!! About to replay '$BAG' onto '$SPOT_NAME' -- THIS MOVES THE PHYSICAL ROBOT !!!"
+    echo "    Make sure there is nothing in the way and you have E-stop ready."
+    read -r -p "Type 'yes' to continue: " CONFIRM
+    if [[ "$CONFIRM" != "yes" ]]; then
+        echo "Aborted."
+        exit 1
+    fi
 fi
 
 RUN_CMD="source /opt/ros/humble/setup.bash && \
