@@ -7,8 +7,8 @@
 # tells you to use this in another terminal right after you enable.
 #
 # Usage:
-#   ./policy_play_toggle.sh --spot-name spot2   # pauses if playing, resumes if paused
-#   ./policy_play_toggle.sh --spot-name spot2   # run again to flip back
+#   ./policy_play_toggle.sh --spot spot2   # pauses if playing, resumes if paused
+#   ./policy_play_toggle.sh --spot spot2   # run again to flip back
 #
 # Tracks play/pause state in a small local file per robot (.policy_paused_<spot_name>,
 # gitignored). This can drift out of sync if you also call the enable service
@@ -27,17 +27,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SPOT_NAME=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --spot-name) SPOT_NAME="$2"; shift 2 ;;
+        --spot) SPOT_NAME="$2"; shift 2 ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --spot-name <spot|spot2>"
+            echo "Usage: $0 --spot <spot|spot2>"
             exit 1
             ;;
     esac
 done
 
 if [[ -z "$SPOT_NAME" ]]; then
-    echo "Error: --spot-name is required (e.g. spot or spot2) -- no default, so you can't pause the wrong robot by accident"
+    echo "Error: --spot is required (e.g. spot or spot2) -- no default, so you can't pause the wrong robot by accident"
     exit 1
 fi
 
@@ -77,10 +77,10 @@ echo
 if echo "$RESULT" | grep -q "success=True"; then
     if [[ "$ACTION" == "pause" ]]; then
         touch "$STATE_FILE"
-        echo ">>> PAUSED. Run './policy_play_toggle.sh --spot-name $SPOT_NAME' again to resume playing. <<<"
+        echo ">>> PAUSED. Run './policy_play_toggle.sh --spot $SPOT_NAME' again to resume playing. <<<"
     else
         rm -f "$STATE_FILE"
-        echo ">>> PLAYING. Run './policy_play_toggle.sh --spot-name $SPOT_NAME' again to pause. <<<"
+        echo ">>> PLAYING. Run './policy_play_toggle.sh --spot $SPOT_NAME' again to pause. <<<"
     fi
 else
     echo "!!! No confirmed success -- state NOT changed. Is the policy node running for '$SPOT_NAME'? !!!"

@@ -12,14 +12,14 @@
 # so camera/joint topics exist for it to read.
 #
 # Usage:
-#   ./run_policy.sh --checkpoint plushie_pickups/checkpoints/040000/pretrained_model --spot-name spot
-#   ./run_policy.sh --checkpoint /ros2_ws/runs/<run>/checkpoints/<step>/pretrained_model --spot-name spot
-#   ./run_policy.sh --checkpoint ... --spot-name spot2
-#   ./run_policy.sh --checkpoint ... --spot-name spot2 --device cpu   # avoid GPU contention with a training job
-#   ./run_policy.sh --checkpoint ... --spot-name spot2 --dry-run      # predictions logged only, never published -- no confirmation needed
-#   ./run_policy.sh --checkpoint ... --spot-name spot2 --yes          # skip the confirmation prompt (e.g. scripted use)
+#   ./run_policy.sh --checkpoint plushie_pickups/checkpoints/040000/pretrained_model --spot spot
+#   ./run_policy.sh --checkpoint /ros2_ws/runs/<run>/checkpoints/<step>/pretrained_model --spot spot
+#   ./run_policy.sh --checkpoint ... --spot spot2
+#   ./run_policy.sh --checkpoint ... --spot spot2 --device cpu   # avoid GPU contention with a training job
+#   ./run_policy.sh --checkpoint ... --spot spot2 --dry-run      # predictions logged only, never published -- no confirmation needed
+#   ./run_policy.sh --checkpoint ... --spot spot2 --yes          # skip the confirmation prompt (e.g. scripted use)
 #
-# --spot-name is required (no default) -- this is a two-robot setup, and
+# --spot is required (no default) -- this is a two-robot setup, and
 # there's no safe robot to silently fall back to if you forget it.
 #
 # The real safety gate lives in the Enable pane, not before the node loads --
@@ -53,13 +53,13 @@ SKIP_CONFIRM=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --checkpoint) CHECKPOINT="$2"; shift 2 ;;
-        --spot-name) SPOT_NAME="$2"; shift 2 ;;
+        --spot) SPOT_NAME="$2"; shift 2 ;;
         --dry-run) DRY_RUN=true; shift ;;
         --yes|-y) SKIP_CONFIRM=true; shift ;;
         --device) DEVICE="$2"; shift 2 ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --checkpoint <path> --spot-name <spot|spot2> [--device cpu|cuda] [--dry-run] [--yes]"
+            echo "Usage: $0 --checkpoint <path> --spot <spot|spot2> [--device cpu|cuda] [--dry-run] [--yes]"
             exit 1
             ;;
     esac
@@ -85,7 +85,7 @@ else
 fi
 
 if [[ -z "$SPOT_NAME" ]]; then
-    echo "Error: --spot-name is required (e.g. spot or spot2) -- no default, so you can't run against the wrong robot by accident"
+    echo "Error: --spot is required (e.g. spot or spot2) -- no default, so you can't run against the wrong robot by accident"
     exit 1
 fi
 

@@ -38,6 +38,6 @@ ros2 service call "$ENABLE_SERVICE" std_srvs/srv/SetBool "{data: true}"
 
 echo
 echo "Enabled. If anything looks weird, open another terminal and run:"
-echo "  ./policy_play_toggle.sh --spot-name $SPOT_NAME"
+echo "  ./policy_play_toggle.sh --spot $SPOT_NAME"
 echo "That pauses it immediately -- run the exact same command again to resume playing."
 exec bash

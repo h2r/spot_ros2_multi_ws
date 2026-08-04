@@ -9,11 +9,11 @@
 # the same starting arm configuration the recording began from before running.
 #
 # Usage:
-#   ./replay_bag.sh 20260727_175555 --spot-name spot
-#   ./replay_bag.sh bag_20260727_175555 --spot-name spot2 --rate 0.5
-#   ./replay_bag.sh /ros2_ws/recordings/bag_20260727_175555_lerobot --spot-name spot
-#   ./replay_bag.sh 20260727_175555 --spot-name spot --yes   # skip the confirmation prompt
-#   ./replay_bag.sh 20260727_175555 --spot-name spot --dry-run   # no confirmation needed either -- nothing moves
+#   ./replay_bag.sh 20260727_175555 --spot spot
+#   ./replay_bag.sh bag_20260727_175555 --spot spot2 --rate 0.5
+#   ./replay_bag.sh /ros2_ws/recordings/bag_20260727_175555_lerobot --spot spot
+#   ./replay_bag.sh 20260727_175555 --spot spot --yes   # skip the confirmation prompt
+#   ./replay_bag.sh 20260727_175555 --spot spot --dry-run   # no confirmation needed either -- nothing moves
 #
 # BAG is looked up under /ros2_ws/recordings/ if it's not itself a path to a
 # dataset directory or .parquet file (see lerobot_action_player.py).
@@ -37,14 +37,14 @@ DRY_RUN=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --spot-name) SPOT_NAME="$2"; shift 2 ;;
+        --spot) SPOT_NAME="$2"; shift 2 ;;
         --fps) FPS="$2"; shift 2 ;;
         --rate) RATE="$2"; shift 2 ;;
         --yes|-y) SKIP_CONFIRM=true; shift ;;
         --dry-run) DRY_RUN=true; shift ;;
         -*)
             echo "Unknown argument: $1"
-            echo "Usage: $0 <bag> [--spot-name spot|spot2] [--fps 15.0] [--rate 1.0]"
+            echo "Usage: $0 <bag> [--spot spot|spot2] [--fps 15.0] [--rate 1.0]"
             exit 1
             ;;
         *)
@@ -60,7 +60,7 @@ done
 
 if [[ -z "$BAG" ]]; then
     echo "Error: bag is required (e.g. a timestamp like 20260727_175555, or a full dataset/parquet path)"
-    echo "Usage: $0 <bag> [--spot-name spot|spot2] [--fps 15.0] [--rate 1.0]"
+    echo "Usage: $0 <bag> [--spot spot|spot2] [--fps 15.0] [--rate 1.0]"
     exit 1
 fi
 
