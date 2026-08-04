@@ -1,15 +1,23 @@
 #!/bin/bash
 
 # Tmux script to launch multi-spot robot system
-# Creates a tmux session with 4 panes for the different components
+# Creates a tmux session with 6 panes: Tusker, Gouger, ROS# Bridge, Multi-Robot,
+# Recording, and an idle Replay pane for running replay_bag.sh / replay_dual_bag.sh
 #
 # Usage:
-#   ./launch_multi_spot.sh                # launch both spot and spot2 (default)
-#   ./launch_multi_spot.sh --spot spot    # single-spot mode: only "spot"
-#   ./launch_multi_spot.sh --spot spot2   # single-spot mode: only "spot2"
+#   ./launch_multi_spot.sh                # launch both spot and spot2 (default);
+#                                          # recording pane runs dual_listener_node
+#                                          # (coordinated dual-robot recording, /bag_trigger)
+#   ./launch_multi_spot.sh --spot spot    # single-spot mode: only "spot";
+#                                          # recording pane runs listener_node
+#   ./launch_multi_spot.sh --spot spot2   # single-spot mode: only "spot2";
+#                                          # recording pane runs listener_node
 
 SESSION_NAME="multi_spot"
 SINGLE_SPOT=""
+
+# Used below to warn in the Recording pane if no session is set (see set_recording_session.sh).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -96,16 +104,39 @@ tmux send-keys -t $SESSION_NAME:0.3 "echo 'Terminal 4: Starting Multi-Robot Coor
 tmux send-keys -t $SESSION_NAME:0.3 "ros2 launch spot_multi spot_multi.launch.py spot_names:='$SPOT_NAMES_JSON' pivot_spot:=$PIVOT_SPOT" C-m
 
 # Pane 4: ROS2 Bag Trigger Listener
+# No --spot flag (both robots up) -> dual_listener_node, for coordinated dual-robot
+# recording. --spot given (single-robot mode) -> listener_node, as before. Both bind
+# the same /bag_trigger service name, so Unity/RecordAction.cs never needs to change.
 tmux send-keys -t $SESSION_NAME:0.4 "cd /ros2_ws && source install/setup.bash" C-m
-tmux send-keys -t $SESSION_NAME:0.4 "echo 'Terminal 5: Starting Bag Trigger Listener Node...'" C-m
-tmux send-keys -t $SESSION_NAME:0.4 "ros2 run bag_trigger listener_node --ros-args -p spot_name:=$BAG_TRIGGER_SPOT" C-m
+if [[ ! -s "$SCRIPT_DIR/.recording_session" ]]; then
+    tmux send-keys -t $SESSION_NAME:0.4 "echo '!!! No recording session set -- new recordings will go to recordings/unsorted (or unsorted_dual) !!!'" C-m
+    tmux send-keys -t $SESSION_NAME:0.4 "echo '    Run ./set_recording_session.sh --name <name> in another pane to use a named folder instead.'" C-m
+fi
+if [[ -z "$SINGLE_SPOT" ]]; then
+    tmux send-keys -t $SESSION_NAME:0.4 "echo 'Terminal 5: Starting Dual Bag Trigger Listener Node (spot + spot2)...'" C-m
+    tmux send-keys -t $SESSION_NAME:0.4 "ros2 run bag_trigger dual_listener_node --ros-args -p spot_a_name:=spot -p spot_b_name:=spot2" C-m
+else
+    tmux send-keys -t $SESSION_NAME:0.4 "echo 'Terminal 5: Starting Bag Trigger Listener Node...'" C-m
+    tmux send-keys -t $SESSION_NAME:0.4 "ros2 run bag_trigger listener_node --ros-args -p spot_name:=$BAG_TRIGGER_SPOT" C-m
+fi
+
+# Pane 5: Idle -- left empty on purpose for running replay_bag.sh / replay_dual_bag.sh
+# by hand, so a replay doesn't share a pane (and Ctrl+C) with anything else running.
+tmux split-window -v -t $SESSION_NAME:0.4
+tmux send-keys -t $SESSION_NAME:0.5 "cd /ros2_ws && source install/setup.bash" C-m
+tmux send-keys -t $SESSION_NAME:0.5 "echo 'Terminal 6: Idle -- run ./replay_bag.sh or ./replay_dual_bag.sh here'" C-m
 
 # Set pane titles
 tmux select-pane -t $SESSION_NAME:0.0 -T " Tusker "
 tmux select-pane -t $SESSION_NAME:0.1 -T " Gouger "
 tmux select-pane -t $SESSION_NAME:0.2 -T " ROS# Bridge "
 tmux select-pane -t $SESSION_NAME:0.3 -T " Multi-Robot "
-tmux select-pane -t $SESSION_NAME:0.4 -T " Recording "
+if [[ -z "$SINGLE_SPOT" ]]; then
+    tmux select-pane -t $SESSION_NAME:0.4 -T " Recording (dual) "
+else
+    tmux select-pane -t $SESSION_NAME:0.4 -T " Recording "
+fi
+tmux select-pane -t $SESSION_NAME:0.5 -T " Replay "
 
 # Focus on first pane
 tmux select-pane -t $SESSION_NAME:0.0

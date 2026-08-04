@@ -25,7 +25,9 @@ setup(
     entry_points={
         'console_scripts': [
             'listener_node = bag_trigger.listener_node:main',
+            'dual_listener_node = bag_trigger.dual_listener_node:main',
             'lerobot_action_player = bag_trigger.lerobot_action_player:main',
+            'dual_lerobot_action_player = bag_trigger.dual_lerobot_action_player:main',
             'policy_inference_node = bag_trigger.policy_inference_node:main',
         ],
     },

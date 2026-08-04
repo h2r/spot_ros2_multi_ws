@@ -33,6 +33,9 @@ secrets/map
 
 # recordings
 recordings/
+recordings_dedup/
+recordings_dual/
 merged_recordings/
 runs/
+.recording_session
 src/spot_rtabmap

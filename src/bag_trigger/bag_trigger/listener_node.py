@@ -21,6 +21,13 @@ from cv_bridge import CvBridge
 # LeRobot Imports
 from lerobot.datasets.lerobot_dataset import LeRobotDataset
 
+RECORDINGS_ROOT = "/ros2_ws/recordings"
+# Written by set_recording_session.sh -- re-read on every recording start (not just
+# once at node startup) so switching sessions with that script takes effect on the
+# next /bag_trigger call without restarting this node.
+RECORDING_SESSION_FILE = "/ros2_ws/.recording_session"
+
+
 class BagTriggerNode(Node):
     def __init__(self):
         super().__init__('bag_trigger_node')
@@ -35,8 +42,13 @@ class BagTriggerNode(Node):
         self.br = CvBridge()
         self.is_recording = False
         self.dataset = None
-        self.lerobot_fps = 15  
-        
+        # Measured across 16 recordings on 2026-08-03: the camera topics (esp. the
+        # stitched frontmiddle_virtual feed) actually update at ~8Hz, well under the
+        # old 15Hz sample rate, so ~40-59% of "frames" at 15Hz were exact duplicate
+        # images (image_callback/hand_image_callback have no staleness check, unlike
+        # cmd_vel). Recording at the real cadence avoids baking in duplicate frames.
+        self.lerobot_fps = 8
+
         # Keep track of how many frames we've written in the current run
         self.frames_in_current_episode = 0
         
@@ -214,6 +226,15 @@ class BagTriggerNode(Node):
         })
         self.frames_in_current_episode += 1
 
+    def _current_recording_session(self) -> str:
+        """Name set via set_recording_session.sh, or '' if none is set (see trigger_callback --
+        an unset session falls back to recordings/unsorted/, never the flat recordings/ root)."""
+        try:
+            with open(RECORDING_SESSION_FILE, 'r') as f:
+                return f.read().strip()
+        except FileNotFoundError:
+            return ''
+
     def trigger_callback(self, request, response):
         if request.data:
             # --- START RECORDING ---
@@ -221,12 +242,26 @@ class BagTriggerNode(Node):
                 response.success = False
                 response.message = "Recording is already running!"
                 return response
-            
-            # 1. Generate unique timestamped dataset directory
+
+            # 1. Generate unique timestamped dataset directory, under recordings/<session>/.
+            # Never falls back to the flat recordings/ root -- an unset session goes to
+            # recordings/unsorted/ instead, so recordings/ itself always stays organized
+            # into subfolders.
+            session = self._current_recording_session()
+            if not session:
+                self.get_logger().warn(
+                    "No recording session set -- saving to recordings/unsorted/. "
+                    "Run ./set_recording_session.sh --name <name> to use a named folder instead."
+                )
+            effective_session = session or "unsorted"
+            session_dir = f"{RECORDINGS_ROOT}/{effective_session}"
+            os.makedirs(session_dir, exist_ok=True)
+
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_dir = f"/ros2_ws/recordings/bag_{timestamp}"
-            unique_repo_id = f"jtoribio/spot_unity_dataset_{timestamp}"
-            lerobot_root = f"/ros2_ws/recordings/bag_{timestamp}_lerobot"
+            output_dir = f"{session_dir}/bag_{timestamp}"
+            unique_repo_id = f"jtoribio/{effective_session}_{timestamp}"
+            lerobot_root = f"{session_dir}/bag_{timestamp}_lerobot"
+            self.get_logger().info(f"Recording session '{effective_session}' active -> saving under {session_dir}")
 
             # 2. Always create a brand-new dataset with this unique name
             self.get_logger().info(f"Initializing a brand new LeRobot Dataset: {unique_repo_id}")

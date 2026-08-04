@@ -9,17 +9,20 @@
 # so camera/joint topics exist for it to read.
 #
 # Usage:
-#   ./run_policy.sh --checkpoint /ros2_ws/recordings/runs/<run>/checkpoints/<step>/pretrained_model --spot-name spot
+#   ./run_policy.sh --checkpoint /ros2_ws/runs/<run>/checkpoints/<step>/pretrained_model --spot-name spot
 #   ./run_policy.sh --checkpoint ... --spot-name spot2
 #   ./run_policy.sh --checkpoint ... --spot-name spot2 --device cpu   # avoid GPU contention with a training job
-#   ./run_policy.sh --checkpoint ... --spot-name spot2 --no-dry-run   # ACTUALLY MOVES THE ROBOT once enabled
+#   ./run_policy.sh --checkpoint ... --spot-name spot2 --dry-run      # predictions logged only, never published -- no confirmation needed
+#   ./run_policy.sh --checkpoint ... --spot-name spot2 --yes          # skip the confirmation prompt (e.g. scripted use)
 #
 # --spot-name is required (no default) -- this is a two-robot setup, and
 # there's no safe robot to silently fall back to if you forget it.
 #
-# dry_run defaults to true -- predictions are logged, never published to the
-# robot -- until you explicitly pass --no-dry-run. Either way, the control
-# loop itself stays off until you separately call:
+# Same pattern as replay_bag.sh/replay_dual_bag.sh: dry_run defaults to FALSE --
+# running for real is the default, gated by a "type yes" confirmation prompt
+# instead of a flag you have to remember to pass. Pass --dry-run for predictions
+# logged only, never published (no confirmation prompt either, since nothing
+# moves). Either way, the control loop itself stays off until you separately call:
 #   ros2 service call /policy_inference/enable std_srvs/srv/SetBool "{data: true}"
 
 CONTAINER_NAME="ros2_ws_gui_record"
@@ -30,19 +33,20 @@ export MSYS_NO_PATHCONV=1
 
 CHECKPOINT=""
 SPOT_NAME=""
-DRY_RUN=true
+DRY_RUN=false
 DEVICE=""
+SKIP_CONFIRM=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --checkpoint) CHECKPOINT="$2"; shift 2 ;;
         --spot-name) SPOT_NAME="$2"; shift 2 ;;
         --dry-run) DRY_RUN=true; shift ;;
-        --no-dry-run) DRY_RUN=false; shift ;;
+        --yes|-y) SKIP_CONFIRM=true; shift ;;
         --device) DEVICE="$2"; shift 2 ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --checkpoint <path> --spot-name <spot|spot2> [--device cpu|cuda] [--no-dry-run]"
+            echo "Usage: $0 --checkpoint <path> --spot-name <spot|spot2> [--device cpu|cuda] [--dry-run] [--yes]"
             exit 1
             ;;
     esac
@@ -59,10 +63,17 @@ if [[ -z "$SPOT_NAME" ]]; then
 fi
 
 if [[ "$DRY_RUN" == false ]]; then
-    echo "!!! --no-dry-run: predicted actions WILL be published once you call the enable service !!!"
-    echo "    Make sure the robot is powered on, standing, and someone is on the e-stop."
+    if [[ "$SKIP_CONFIRM" == false ]]; then
+        echo "!!! About to run policy inference on '$SPOT_NAME' -- predicted actions WILL be published once you call the enable service !!!"
+        echo "    Make sure the robot is powered on, standing, and someone is on the e-stop."
+        read -r -p "Type 'yes' to continue: " CONFIRM
+        if [[ "$CONFIRM" != "yes" ]]; then
+            echo "Aborted."
+            exit 1
+        fi
+    fi
 else
-    echo "dry_run=true (default): predictions will be logged only, nothing gets published."
+    echo "--dry-run: predictions will be logged only, nothing gets published."
 fi
 
 DEVICE_ARG=""
@@ -86,5 +97,5 @@ else
         echo "Error: container '${CONTAINER_NAME}' is not running."
         exit 1
     fi
-    docker exec "$CONTAINER_NAME" bash -c "$RUN_CMD"
+    docker exec -it "$CONTAINER_NAME" bash -c "$RUN_CMD"
 fi
