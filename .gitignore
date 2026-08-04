@@ -38,4 +38,5 @@ recordings_dual/
 merged_recordings/
 runs/
 .recording_session
+.policy_paused_*
 src/spot_rtabmap

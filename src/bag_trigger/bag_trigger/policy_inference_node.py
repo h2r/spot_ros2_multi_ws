@@ -29,9 +29,10 @@ class PolicyInferenceNode(Node):
 
     THIS MOVES THE PHYSICAL ROBOT once enabled. Two independent safety gates:
       - dry_run (default true): predictions are logged, never published.
-      - policy_inference/enable service (default off): the control loop is a
-        no-op until you explicitly enable it, so loading the node/policy never
-        by itself starts commanding the robot.
+      - /{spot_name}/policy_inference/enable service (default off): the control
+        loop is a no-op until you explicitly enable it, so loading the
+        node/policy never by itself starts commanding the robot. Namespaced per
+        robot so running this for two robots at once can't cross-trigger.
     Make sure the robot is powered on, standing, and someone is on the e-stop
     before setting dry_run:=false and enabling for real.
     """
@@ -109,14 +110,18 @@ class PolicyInferenceNode(Node):
         self.arm_pose_pub = self.create_publisher(PoseStamped, f'/{self.spot_name}/arm_pose_commands', 10)
         self.gripper_pub = self.create_publisher(Float32, f'/{self.spot_name}/gripper_angle_command', 10)
 
-        self.srv = self.create_service(SetBool, 'policy_inference/enable', self.enable_callback)
+        # Namespaced per robot -- NOT a bare 'policy_inference/enable' -- so running
+        # this for two robots at once doesn't leave two nodes both offering the same
+        # service name, with no way to tell which one an enable call actually reaches.
+        self.enable_service_name = f'/{self.spot_name}/policy_inference/enable'
+        self.srv = self.create_service(SetBool, self.enable_service_name, self.enable_callback)
 
         self.control_period = 1.0 / control_hz
         self.timer = self.create_timer(self.control_period, self.control_step)
 
         self.get_logger().info(
             f'Policy inference node ready for "{self.spot_name}". '
-            f'Call the policy_inference/enable service to start.'
+            f'Call the {self.enable_service_name} service to start.'
         )
 
     def image_callback(self, msg: Image):
